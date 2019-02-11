@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -18,12 +18,12 @@ public class EventBus
 		listeners.RemoveAll(l => l.Listener == listener);
 	}
 
-	public void PostEvent(object e)
+	public T PostEvent<T>(T e)
 	{
-//		listeners.Where(l => l.EventType == e.GetType()).ToList().ForEach(l => l.PostEvent(e));
 		listeners.Where(l => l.typeToMethod.Keys.Contains(e.GetType()))
 			.ToList()
 			.ForEach(l => l.PostEvent(e));
+		return e;
 	}
 
 	private static EventBus instance;
@@ -35,10 +35,8 @@ public class EventBus
 	private class EventListenerWrapper
 	{
 		public object Listener { get; private set; }
-		//		public Type EventType { get; private set; }
-		public Dictionary<Type, MethodBase> typeToMethod = new Dictionary<Type, MethodBase>();
+		public Dictionary<Type, List<MethodBase>> typeToMethod = new Dictionary<Type, List<MethodBase>>();
 
-//		private MethodBase method;
 		private MethodBase[] methods;
 
 		public EventListenerWrapper(object listener)
@@ -47,12 +45,9 @@ public class EventBus
 
 			Type type = listener.GetType();
 
-//			method = type.GetMethod("OnEvent");
-//			if (method == null)
-//				throw new ArgumentException("Class " + type.Name + " does not containt method OnEvent");
 			List<MethodInfo> allMethods = type.GetMethods().ToList();
 			for(int i = allMethods.Count - 1; i >= 0; i--) {
-				if(allMethods[i].Name != "OnEvent") {
+				if(allMethods[i].GetCustomAttributes(typeof(OnEvent), false).Length == 0) {
 					allMethods.RemoveAt(i);
 				}
 			}
@@ -65,16 +60,20 @@ public class EventBus
 				if (parameters.Length != 1)
 					throw new ArgumentException("Method OnEvent of class " + type.Name + " have invalid number of parameters (should be one)");
 
-//				EventType = parameters[0].ParameterType;
-				typeToMethod.Add(parameters[0].ParameterType, method);
+				Type eventType = parameters[0].ParameterType;
+				if(!typeToMethod.ContainsKey(eventType)) {
+					typeToMethod.Add(eventType, new List<MethodBase>());
+				}
+				typeToMethod[parameters[0].ParameterType].Add(method);
 			}
 		}
 
 		public void PostEvent(object e)
 		{
-//			method.Invoke(Listener, new[] { e });
-			MethodBase method = typeToMethod[e.GetType()];
-			method.Invoke(Listener, new[] { e });
+			List<MethodBase> methods = typeToMethod[e.GetType()];
+			foreach(MethodBase method in methods) {
+				method.Invoke(Listener, new[] { e });
+			}
 		}
 	}      
 }
