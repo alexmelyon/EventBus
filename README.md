@@ -10,7 +10,7 @@ Simple system for comminication between different systems.
 Handle event
 
     [OnEvent]
-    public void OnEvent(FirstEvent event) {
+    public void HandleFirstEvent(FirstEvent event) {
         //
     }
 
