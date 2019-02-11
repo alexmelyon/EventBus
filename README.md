@@ -6,10 +6,11 @@ Simple system for comminication between different systems.
     EventBus.Instance.Unregister(this);
 
 # Usage
+Handle event
+    [OnEvent]
     public void OnEvent(FirstEvent event) {
         //
     }
 
-    public void OnEvent(SecondEvent event) {
-        //
-    }
+Send event
+    EventBus.Instance.PostEvent(new FirstEvent());
